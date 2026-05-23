@@ -1,0 +1,22 @@
+{
+  "name": "pwnkemon-scan-action",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub Action that runs a Pwnkemon code scan and reports findings on the PR.",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
+    "format": "prettier --write src/",
+    "lint": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vercel/ncc": "^0.38.3",
+    "typescript": "^5.6.0"
+  }
+}

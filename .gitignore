@@ -1,0 +1,5 @@
+# Dependencies and build cache — node_modules is reinstalled on demand;
+# dist/ is committed (Actions convention — the runner can't `npm install`).
+node_modules/
+*.log
+.env

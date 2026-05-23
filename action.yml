@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────────────
+# Pwnkemon Scan — GitHub Action
+#
+# Drop this in any workflow to run a Pwnkemon code scan against the
+# checked-out repo and (optionally) fail the build on findings of a
+# chosen severity.
+#
+#   - name: Pwnkemon
+#     uses: Pwnkemon/pwnkemon-scan@v1
+#     with:
+#       api-token: ${{ secrets.PWNKEMON_API_TOKEN }}
+#
+# Architecture: the Action is a thin CI wrapper. The scan itself runs
+# on Pwnkemon's isolated execution host — untrusted scan code never
+# touches the GitHub-hosted runner. See docs/SCAN-EXECUTION-PLAN.md (R-4).
+# ─────────────────────────────────────────────────────────────────────
+name: "Pwnkemon Scan"
+description: "Run a Pwnkemon code security scan and report findings on the PR."
+author: "Pwnkemon"
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  api-token:
+    description: >
+      Pwnkemon API token (kind: github_action). Create one at
+      https://pwnkemon.com/dashboard/tokens and store it as the
+      `PWNKEMON_API_TOKEN` secret on your repo.
+    required: true
+
+  pwnkemon-api-base:
+    description: >
+      Pwnkemon API base URL. Override only for self-hosted or staging
+      deployments; leave as default for the hosted product.
+    required: false
+    default: "https://pwnkemon.com"
+
+  tier:
+    description: >
+      Scan depth. `quick` is fastest (1 credit); `standard` (recommended)
+      runs the full LLM triage; `deep` (10 credits) does the most thorough
+      pass. Must be one of: quick, standard, deep.
+    required: false
+    default: "standard"
+
+  fail-on:
+    description: >
+      Severity that causes the Action to fail the workflow run. One of:
+      `critical`, `high`, `medium`, `low`, `none`. Default `high` —
+      criticals + highs fail the build, lower-severity findings post but
+      do not break CI.
+    required: false
+    default: "high"
+
+  comment-pr:
+    description: >
+      Post (or update) a comment on the PR with the findings table.
+      Requires the workflow to grant `pull-requests: write` permission.
+      Set to `false` to skip and only log findings to the CI output.
+    required: false
+    default: "true"
+
+  comment-on-clean:
+    description: >
+      When `comment-pr` is true and the scan finds nothing, still post a
+      "no findings" confirmation comment. Set to `false` to stay silent
+      on clean runs.
+    required: false
+    default: "true"
+
+  wait-for-completion:
+    description: >
+      Block the Action until the scan finishes. Set to `false` to launch
+      asynchronously and let the workflow continue immediately (useful
+      for long-running scans that you don't want blocking deploys).
+    required: false
+    default: "true"
+
+  timeout-minutes:
+    description: >
+      Maximum time to wait for a scan to complete when
+      `wait-for-completion` is true. After this, the Action exits with
+      a timeout error; the scan continues in Pwnkemon's backend.
+    required: false
+    default: "30"
+
+outputs:
+  scan-id:
+    description: "The Pwnkemon scan id (UUID)."
+  report-url:
+    description: "URL of the full scan report in the Pwnkemon dashboard."
+  finding-count:
+    description: "Total number of confirmed findings (post-triage)."
+  status:
+    description: "Final scan status: completed, failed, or timeout."
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
