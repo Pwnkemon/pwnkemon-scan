@@ -29,6 +29,16 @@ inputs:
       `PWNKEMON_API_TOKEN` secret on your repo.
     required: true
 
+  github-token:
+    description: >
+      GitHub token used to post the findings comment on PRs. Defaults
+      to the workflow's `GITHUB_TOKEN`, which works in 99% of cases.
+      Override only if your workflow has GITHUB_TOKEN unavailable
+      (some cross-repo / app setups). The workflow still needs
+      `permissions: { pull-requests: write }` for the post to succeed.
+    required: false
+    default: ${{ github.token }}
+
   pwnkemon-api-base:
     description: >
       Pwnkemon API base URL. Override only for self-hosted or staging

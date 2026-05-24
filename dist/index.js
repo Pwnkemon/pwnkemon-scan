@@ -30207,18 +30207,42 @@ async function main() {
     const timeoutMinutes = parseInt(core.getInput("timeout-minutes") || "30", 10);
     const ctx = github.context;
     const repoUrl = `https://github.com/${ctx.repo.owner}/${ctx.repo.repo}`;
-    // The exact ref we're scanning. For PRs we want the head SHA so the
-    // scan reflects the code in the PR, not the base branch. Otherwise
-    // use the workflow's GITHUB_SHA.
-    const headSha = ctx.payload.pull_request?.head?.sha || ctx.sha;
-    const repoRef = headSha;
-    core.info(`Launching ${tier} code scan on ${repoUrl} @ ${repoRef.slice(0, 7)}`);
+    // Resolve (branch, commit) from the trigger event. The scanner needs
+    // a BRANCH for `git clone --branch` AND a COMMIT for the post-clone
+    // checkout — sending only the SHA fails because `--branch <sha>` is
+    // not valid. For PRs we want the head SHA (the code *in* the PR);
+    // for push/workflow_dispatch we use the ref the workflow ran on.
+    const pr = ctx.payload.pull_request;
+    let branchRef;
+    let commitSha;
+    if (pr) {
+        branchRef = pr.head?.ref; // e.g. "feature/foo"
+        commitSha = pr.head?.sha || ctx.sha;
+    }
+    else {
+        // ctx.ref is the full ref ("refs/heads/main" or "refs/tags/v1").
+        // Strip the prefix so we hand the scanner the bare branch/tag name.
+        const ref = ctx.ref || "";
+        if (ref.startsWith("refs/heads/")) {
+            branchRef = ref.substring("refs/heads/".length);
+        }
+        else if (ref.startsWith("refs/tags/")) {
+            branchRef = ref.substring("refs/tags/".length);
+        }
+        else {
+            branchRef = undefined; // unknown ref shape — let scanner use default branch
+        }
+        commitSha = ctx.sha;
+    }
+    core.info(`Launching ${tier} code scan on ${repoUrl} ` +
+        `(branch: ${branchRef ?? "default"}, commit: ${commitSha.slice(0, 7)})`);
     const client = new PwnkemonClient(apiBase, apiToken);
     const launched = await client.launchScan({
         scan_type: "code",
         tier,
         repo_url: repoUrl,
-        repo_ref: repoRef,
+        repo_ref: branchRef,
+        commit_sha: commitSha,
     });
     core.setOutput("scan-id", launched.id);
     const reportUrl = `${apiBase.replace(/\/$/, "")}/dashboard/scans/${launched.id}`;
@@ -30248,13 +30272,14 @@ async function main() {
     // Actions run page even when no PR.
     await core.summary.addRaw(md).write();
     if (commentPR && (findings.length > 0 || commentOnClean)) {
-        // Octokit needs a GitHub token — workflow's default GITHUB_TOKEN
-        // suffices for issues:write / pull-requests:write.
-        const ghToken = process.env.GITHUB_TOKEN;
+        // Prefer the explicit `github-token` input (default: ${{ github.token }}
+        // in action.yml — works without env: forwarding). Fall back to the
+        // process env for older workflows.
+        const ghToken = core.getInput("github-token") || process.env.GITHUB_TOKEN || "";
         if (!ghToken) {
-            core.warning("comment-pr=true but GITHUB_TOKEN is unavailable; skipping PR comment. " +
-                "Add `permissions: { pull-requests: write }` to your workflow and ensure " +
-                "GITHUB_TOKEN is passed.");
+            core.warning("comment-pr=true but no GitHub token is available; skipping PR comment. " +
+                "Pass `github-token: ${{ github.token }}` (default) and add " +
+                "`permissions: { pull-requests: write }` to your workflow.");
         }
         else {
             try {
