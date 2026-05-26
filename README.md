@@ -1,14 +1,31 @@
 # Pwnkemon Scan — GitHub Action
 
-Run a **Pwnkemon** security scan on every pull request. Get findings as
-a PR comment, fail the build on serious issues, ship safer code.
+[![GitHub release](https://img.shields.io/github/v/release/Pwnkemon/pwnkemon-scan?label=release)](https://github.com/Pwnkemon/pwnkemon-scan/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Website](https://img.shields.io/badge/site-pwnkemon.com-ededed?logo=safari&logoColor=white)](https://pwnkemon.com)
 
-> [Pwnkemon](https://pwnkemon.com) is an agentic AI security scanner.
-> It runs the same scanners you already know (semgrep, osv-scanner,
-> trivy, gitleaks, npm-audit) and adds an LLM triage layer that
-> filters noise, marks unreachable findings, and prioritises by
+Run an **agentic AI security scan** on every pull request. Get a triaged
+findings comment, fail the build on serious issues, ship safer code —
+without burning CI minutes or trusting a runner with scanner code.
+
+> **Pwnkemon** runs the scanners you already know (semgrep, osv-scanner,
+> trivy, gitleaks, npm-audit, nmap, DAST) and adds an LLM triage layer
+> that filters noise, marks unreachable findings, and prioritises by
 > exploitability. Most "high"-severity dependency CVEs are dev-only
-> noise — Pwnkemon tells you which ones actually matter.
+> noise — Pwnkemon tells you which ones actually matter, in plain
+> English, with a suggested fix.
+
+## Why not just use Snyk / Dependabot / a hand-rolled semgrep workflow?
+
+| | Snyk / Dependabot | Hand-rolled CI scanners | **Pwnkemon Scan** |
+|---|---|---|---|
+| Triage noise | None — raw CVE feed | None | **LLM filter + reachability** |
+| Runs on your CI runner | Yes (slow, secret risk) | Yes | **No — isolated host** |
+| Cross-tool dedup | Per-tool | Per-tool | **One report, deduped** |
+| Code review (SAST) | Limited | DIY | **Included** |
+| Container scan | Add-on | DIY | **Included** |
+| Real DAST against your staging | Enterprise only | DIY | **Included on Standard+** |
+| Cost | $$$$, sales call | Engineer-hours | **From $249/mo, self-serve** |
 
 ## Quick start
 
@@ -145,8 +162,16 @@ set `comment-pr: false`, only `contents: read` is needed.
 
 ## Pricing & credits
 
-Each scan consumes Pwnkemon credits based on tier. See
-<https://pwnkemon.com/pricing> for current rates and free tier.
+Each scan consumes Pwnkemon credits based on tier. Starter plan is
+$249/mo with enough credits for a small repo's PR cadence; one-off
+**Pentest Report** SKUs start at $1,999. See
+<https://pwnkemon.com/pricing> for current rates and the free tier.
+
+## Built solo, scanned daily
+
+Pwnkemon is built solo, and scanned by itself on every commit. If you
+hit something weird, open an issue here or email
+<support@pwnkemon.com>.
 
 ## License
 
